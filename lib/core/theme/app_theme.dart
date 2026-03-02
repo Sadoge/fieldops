@@ -58,6 +58,7 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
+      fontFamily: 'Inter',
       scaffoldBackgroundColor: AppColors.concrete,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.navy,
@@ -65,6 +66,7 @@ abstract final class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
+          fontFamily: 'Inter',
           color: Colors.white,
           fontSize: 18,
           fontWeight: FontWeight.w700,
@@ -212,12 +214,14 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
+      fontFamily: 'Inter',
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF0A1520),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
+          fontFamily: 'Inter',
           color: Colors.white,
           fontSize: 18,
           fontWeight: FontWeight.w700,

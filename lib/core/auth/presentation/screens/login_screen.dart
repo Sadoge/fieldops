@@ -71,7 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'Field Operations Management',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white38,
+                      color: Colors.white60,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -83,11 +83,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      labelStyle: const TextStyle(color: Colors.white54),
+                      labelStyle: const TextStyle(color: Colors.white70),
                       hintStyle: const TextStyle(color: Colors.white30),
                       prefixIcon: const Icon(Icons.email_outlined,
-                          color: Colors.white54),
-                      fillColor: Colors.white.withAlpha(18),
+                          color: Colors.white70),
+                      fillColor: Colors.white.withAlpha(26),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: const BorderSide(
@@ -96,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                            color: Colors.white.withAlpha(30), width: 1),
+                            color: Colors.white.withAlpha(60), width: 1),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -120,19 +120,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      labelStyle: const TextStyle(color: Colors.white54),
+                      labelStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const Icon(Icons.lock_outline,
-                          color: Colors.white54),
+                          color: Colors.white70),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscure
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
-                          color: Colors.white38,
+                          color: Colors.white60,
                         ),
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
-                      fillColor: Colors.white.withAlpha(18),
+                      fillColor: Colors.white.withAlpha(26),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: const BorderSide(
@@ -141,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                            color: Colors.white.withAlpha(30), width: 1),
+                            color: Colors.white.withAlpha(60), width: 1),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -186,7 +186,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'Tip: use "admin@", "supervisor@", "worker@" or "viewer@" in the email to set your role.',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.white38,
+                      color: Colors.white60,
                     ),
                     textAlign: TextAlign.center,
                   ),
