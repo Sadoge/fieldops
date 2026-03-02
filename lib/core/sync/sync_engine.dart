@@ -33,12 +33,20 @@ class SyncEngine {
     if (_isRunning) return;
     _isRunning = true;
     statusNotifier.setSyncing();
+    // ignore: avoid_print
+    print('[SyncEngine] sync started');
 
     try {
+      // Reset any items stuck in-flight from a previous crashed session.
+      await syncQueueDao.resetInFlight();
       await _pullRemoteChanges();
       await _pushPendingItems();
       statusNotifier.setSuccess(DateTime.now().toUtc());
-    } catch (e) {
+      // ignore: avoid_print
+      print('[SyncEngine] sync completed successfully');
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('[SyncEngine] sync error: $e\n$st');
       statusNotifier.setError(e.toString());
     } finally {
       _isRunning = false;
@@ -56,17 +64,40 @@ class SyncEngine {
 
   Future<void> _pushPendingItems() async {
     final items = await syncQueueDao.pendingItems();
+    // ignore: avoid_print
+    print('[SyncEngine] ${items.length} pending item(s) in queue');
     final now = DateTime.now().toUtc();
     final due = items.where(
       (i) => i.nextRetryAt == null || i.nextRetryAt!.isBefore(now),
-    );
+    ).toList();
+    // ignore: avoid_print
+    print('[SyncEngine] ${due.length} item(s) due for push');
 
+    // Build a set of entity IDs that have a pending delete — skip all other
+    // operations for those entities so create/update don't re-create them.
+    final deletedEntityIds = due
+        .where((i) => i.operation == SyncOperation.delete)
+        .map((i) => i.entityId)
+        .toSet();
+
+    String? firstError;
     for (final item in due) {
+      if (item.operation != SyncOperation.delete &&
+          deletedEntityIds.contains(item.entityId)) {
+        // A delete exists for this entity — remove this stale item and skip it.
+        await syncQueueDao.deleteItem(item.id);
+        continue;
+      }
+      // ignore: avoid_print
+      print('[SyncEngine] pushing ${item.entityType}/${item.entityId} (op: ${item.operation.name})');
       await syncQueueDao.updateStatus(item.id, SyncItemStatus.inFlight);
       try {
         await _processItem(item);
-        await syncQueueDao.updateStatus(item.id, SyncItemStatus.completed);
-      } catch (e) {
+        await syncQueueDao.deleteItem(item.id);
+      } catch (e, st) {
+        // ignore: avoid_print
+        print('[SyncEngine] push failed for ${item.entityType}/${item.entityId}: $e\n$st');
+        firstError ??= e.toString();
         final newCount = item.retryCount + 1;
         if (RetryPolicy.shouldAbandon(newCount)) {
           await syncQueueDao.updateStatus(
@@ -83,6 +114,8 @@ class SyncEngine {
         }
       }
     }
+
+    if (firstError != null) throw Exception(firstError);
   }
 
   Future<void> _processItem(SyncQueueData item) async {
@@ -97,7 +130,8 @@ class SyncEngine {
           final remote = await remoteClient.pushWorkOrder(payload);
           final local = await workOrderRepo.findById(item.entityId);
           if (local != null) {
-            await workOrderRepo.save(local.copyWith(
+            // Use updateLocalOnly to avoid re-enqueuing a new sync item.
+            await workOrderRepo.updateLocalOnly(local.copyWith(
               remoteId: remote['remoteId'] as String?,
               serverVersion: remote['serverVersion'] as int?,
               isDirty: false,

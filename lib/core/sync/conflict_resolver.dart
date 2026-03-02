@@ -24,8 +24,8 @@ class ConflictResolver {
     final local = await workOrderRepo.findById(remoteOrder.id);
 
     if (local == null) {
-      // No local copy — insert directly, mark clean
-      await workOrderRepo.save(remoteOrder.copyWith(isDirty: false));
+      // No local copy — insert directly without enqueuing a sync item.
+      await workOrderRepo.updateLocalOnly(remoteOrder.copyWith(isDirty: false));
       return;
     }
 
@@ -44,7 +44,7 @@ class ConflictResolver {
       case _Resolution.merge:
         // For MVP merge falls back to server wins; log it either way.
         final needsAudit = local.isDirty || resolution == _Resolution.merge;
-        await workOrderRepo.save(remoteOrder.copyWith(isDirty: false));
+        await workOrderRepo.updateLocalOnly(remoteOrder.copyWith(isDirty: false));
         if (needsAudit) {
           await auditLogRepo.record(
             workOrderId: local.id,

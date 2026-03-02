@@ -30,8 +30,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Permission guard for audit log
       if (state.uri.path == RouteNames.auditLog) {
-        final permService = ref.read(permissionServiceProvider);
-        if (!permService.can(Permission.viewAuditLog)) {
+        final permService = ref.read(permissionServiceOrNullProvider);
+        if (permService == null || !permService.can(Permission.viewAuditLog)) {
           return RouteNames.workOrderList;
         }
       }
@@ -74,7 +74,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RouteNames.auditLog,
-        builder: (_, __) => const AuditLogScreen(workOrderId: ''),
+        builder: (_, __) => const AuditLogScreen(),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

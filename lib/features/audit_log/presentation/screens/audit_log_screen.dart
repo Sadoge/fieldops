@@ -8,16 +8,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuditLogScreen extends ConsumerWidget {
-  const AuditLogScreen({super.key, required this.workOrderId});
+  const AuditLogScreen({super.key, this.workOrderId});
 
-  final String workOrderId;
+  /// If null, shows the global audit log across all work orders.
+  final String? workOrderId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final entriesAsync = ref.watch(auditLogProvider(workOrderId));
+    final entriesAsync = workOrderId != null
+        ? ref.watch(auditLogProvider(workOrderId!))
+        : ref.watch(auditLogAllProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Audit Log')),
+      appBar: AppBar(
+        title: Text(workOrderId != null ? 'Audit Log' : 'Activity Log'),
+      ),
       body: entriesAsync.when(
         data: (entries) => entries.isEmpty
             ? const EmptyStateView(

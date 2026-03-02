@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fieldops/app.dart';
 import 'package:fieldops/core/config/supabase_config.dart';
 import 'package:fieldops/core/database/app_database.dart';
@@ -40,17 +42,19 @@ void main() async {
     );
   }
 
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: false,
-  );
-  await Workmanager().registerPeriodicTask(
-    _syncTaskId,
-    _syncTaskName,
-    frequency: const Duration(minutes: 15),
-    existingWorkPolicy: ExistingWorkPolicy.keep,
-    constraints: Constraints(networkType: NetworkType.connected),
-  );
+  if (Platform.isAndroid) {
+    await Workmanager().initialize(
+      callbackDispatcher,
+      isInDebugMode: false,
+    );
+    await Workmanager().registerPeriodicTask(
+      _syncTaskId,
+      _syncTaskName,
+      frequency: const Duration(minutes: 15),
+      existingWorkPolicy: ExistingWorkPolicy.keep,
+      constraints: Constraints(networkType: NetworkType.connected),
+    );
+  }
 
   runApp(const ProviderScope(child: FieldOpsApp()));
 }

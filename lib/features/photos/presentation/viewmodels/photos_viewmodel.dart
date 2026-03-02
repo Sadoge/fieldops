@@ -42,6 +42,7 @@ class PhotosViewModel extends AutoDisposeAsyncNotifier<void> {
       fileSizeBytes: sizeBytes,
     );
     await ref.read(photoRepositoryProvider).save(photo);
+    ref.read(syncEngineProvider).sync();
   }
 }
 

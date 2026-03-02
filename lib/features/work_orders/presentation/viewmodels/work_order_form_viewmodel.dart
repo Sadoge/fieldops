@@ -124,6 +124,8 @@ class WorkOrderFormViewModel extends AutoDisposeNotifier<WorkOrderFormState> {
       }
 
       await ref.read(workOrderRepositoryProvider).save(order);
+      // Fire-and-forget sync so the change reaches the server immediately.
+      ref.read(syncEngineProvider).sync();
       return true;
     } catch (e) {
       state = state.copyWith(

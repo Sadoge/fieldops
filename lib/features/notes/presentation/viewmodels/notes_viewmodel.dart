@@ -25,6 +25,7 @@ class NotesViewModel extends AutoDisposeAsyncNotifier<void> {
       createdAt: DateTime.now().toUtc(),
     );
     await ref.read(noteRepositoryProvider).add(note);
+    ref.read(syncEngineProvider).sync();
   }
 }
 

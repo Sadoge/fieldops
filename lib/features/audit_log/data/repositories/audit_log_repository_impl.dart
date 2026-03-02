@@ -27,6 +27,23 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
           );
 
   @override
+  Stream<List<AuditLogEntry>> watchAll() =>
+      _dao.watchAll().map(
+            (rows) => rows
+                .map((d) => AuditLogEntry(
+                      id: d.id,
+                      workOrderId: d.workOrderId,
+                      action: d.action,
+                      performedBy: d.performedBy,
+                      performedAt: d.performedAt,
+                      oldValue: d.oldValue,
+                      newValue: d.newValue,
+                      note: d.note,
+                    ))
+                .toList(),
+          );
+
+  @override
   Future<void> record({
     required String workOrderId,
     required AuditAction action,

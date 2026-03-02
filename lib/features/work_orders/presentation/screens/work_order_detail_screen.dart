@@ -141,6 +141,7 @@ class WorkOrderDetailScreen extends ConsumerWidget {
     );
     if (confirmed) {
       await ref.read(workOrderRepositoryProvider).delete(id);
+      ref.read(syncEngineProvider).sync();
       if (context.mounted) context.pop();
     }
   }
@@ -184,6 +185,7 @@ class _StatusChanger extends ConsumerWidget {
                               : null,
                         ),
                       );
+                  ref.read(syncEngineProvider).sync();
                 }
               },
             ),

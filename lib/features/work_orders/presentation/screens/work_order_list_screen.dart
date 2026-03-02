@@ -18,8 +18,9 @@ class WorkOrderListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(workOrderListProvider);
-    final canCreate = ref.watch(permissionServiceProvider).can(Permission.createWorkOrder);
-    final canExport = ref.watch(permissionServiceProvider).can(Permission.exportData);
+    final permService = ref.watch(permissionServiceOrNullProvider);
+    final canCreate = permService?.can(Permission.createWorkOrder) ?? false;
+    final canExport = permService?.can(Permission.exportData) ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -40,6 +41,11 @@ class WorkOrderListScreen extends ConsumerWidget {
             icon: const Icon(Icons.history),
             tooltip: 'Audit log',
             onPressed: () => context.push(RouteNames.auditLog),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sign out',
+            onPressed: () => ref.read(authRepositoryProvider).signOut(),
           ),
         ],
       ),

@@ -15,6 +15,11 @@ class AuditLogDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.performedAt)]))
           .watch();
 
+  Stream<List<AuditLogData>> watchAll() =>
+      (select(auditLog)
+            ..orderBy([(t) => OrderingTerm.desc(t.performedAt)]))
+          .watch();
+
   Future<void> insert(AuditLogCompanion entry) =>
       into(auditLog).insert(entry);
 }

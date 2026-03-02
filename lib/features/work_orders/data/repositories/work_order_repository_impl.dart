@@ -69,18 +69,31 @@ class WorkOrderRepositoryImpl implements WorkOrderRepository {
   }
 
   @override
+  Future<void> updateLocalOnly(WorkOrder order) =>
+      dao.upsert(WorkOrderMapper.toCompanion(order));
+
+  @override
   Future<void> delete(String id) async {
     final existing = await dao.findById(id);
     if (existing == null) return;
+
+    final existsOnServer = existing.remoteId != null;
+
+    // Cancel all pending queue items for this entity regardless.
+    await syncQueueDao.cancelPendingForEntity(id);
     await dao.deleteById(id);
-    final now = DateTime.now().toUtc();
-    await syncQueueDao.enqueue(SyncQueueCompanion(
-      entityType: const Value('work_order'),
-      entityId: Value(id),
-      operation: const Value(SyncOperation.delete),
-      status: const Value(SyncItemStatus.pending),
-      payload: Value(jsonEncode({'id': id})),
-      createdAt: Value(now),
-    ));
+
+    if (existsOnServer) {
+      // Record reached the server — enqueue a delete so it's removed remotely too.
+      await syncQueueDao.enqueue(SyncQueueCompanion(
+        entityType: const Value('work_order'),
+        entityId: Value(id),
+        operation: const Value(SyncOperation.delete),
+        status: const Value(SyncItemStatus.pending),
+        payload: Value(jsonEncode({'id': id})),
+        createdAt: Value(DateTime.now().toUtc()),
+      ));
+    }
+    // If remoteId is null the record never reached the server — nothing to do remotely.
   }
 }

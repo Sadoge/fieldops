@@ -3,6 +3,17 @@ import 'dart:io';
 import 'package:fieldops/core/network/remote_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+final _uuidPattern = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+  caseSensitive: false,
+);
+
+/// Returns [value] if it looks like a UUID, otherwise null.
+String? _uuidOrNull(dynamic value) {
+  if (value is String && _uuidPattern.hasMatch(value)) return value;
+  return null;
+}
+
 /// Production remote client backed by Supabase.
 /// Wire it up by overriding [remoteClientProvider]:
 ///   remoteClientProvider.overrideWithValue(SupabaseRemoteClient())
@@ -18,8 +29,8 @@ class SupabaseRemoteClient implements RemoteClient {
       'title': payload['title'],
       'description': payload['description'],
       'status': payload['status'],
-      'assigned_to': payload['assignedTo'],
-      'created_by': payload['createdBy'],
+      'assigned_to': _uuidOrNull(payload['assignedTo']),
+      'created_by': _uuidOrNull(payload['createdBy']),
       'created_at': payload['createdAt'],
       'updated_at': payload['updatedAt'],
       'completed_at': payload['completedAt'],
@@ -65,7 +76,7 @@ class SupabaseRemoteClient implements RemoteClient {
       'id': payload['id'],
       'work_order_id': payload['workOrderId'],
       'body': payload['body'],
-      'created_by': payload['createdBy'],
+      'created_by': _uuidOrNull(payload['createdBy']),
       'created_at': payload['createdAt'],
     });
   }

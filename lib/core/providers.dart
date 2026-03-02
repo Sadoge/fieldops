@@ -62,6 +62,13 @@ final permissionServiceProvider = Provider<PermissionService>((ref) {
   return PermissionService(user);
 });
 
+/// Returns null when there is no authenticated user — safe for UI permission guards.
+final permissionServiceOrNullProvider = Provider<PermissionService?>((ref) {
+  final user = ref.watch(currentUserProvider).valueOrNull;
+  if (user == null) return null;
+  return PermissionService(user);
+});
+
 // ── Repositories ──────────────────────────────────────────────────────────────
 
 final auditLogRepositoryProvider = Provider<AuditLogRepository>((ref) {

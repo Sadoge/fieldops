@@ -17,6 +17,15 @@ class SyncQueueDao extends DatabaseAccessor<AppDatabase>
     return query.map((row) => row.read(syncQueue.id.count()) ?? 0).watchSingle();
   }
 
+  /// Resets items stuck as inFlight from a previous crashed session back to pending.
+  Future<void> resetInFlight() =>
+      (update(syncQueue)
+            ..where((t) => t.status.equalsValue(SyncItemStatus.inFlight)))
+          .write(const SyncQueueCompanion(
+            status: Value(SyncItemStatus.pending),
+            nextRetryAt: Value(null),
+          ));
+
   Future<List<SyncQueueData>> pendingItems() =>
       (select(syncQueue)
             ..where((t) =>
@@ -27,6 +36,31 @@ class SyncQueueDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> enqueue(SyncQueueCompanion entry) =>
       into(syncQueue).insert(entry);
+
+  /// Returns pending/failed items for [entityId] that have never been synced
+  /// to the server (i.e. operation = create or update).
+  Future<List<SyncQueueData>> pendingForEntity(String entityId) =>
+      (select(syncQueue)
+            ..where((t) =>
+                t.entityId.equals(entityId) &
+                (t.status.equalsValue(SyncItemStatus.pending) |
+                    t.status.equalsValue(SyncItemStatus.failed) |
+                    t.status.equalsValue(SyncItemStatus.inFlight))))
+          .get();
+
+  /// Cancels all unsynced queue items for [entityId].
+  Future<void> cancelPendingForEntity(String entityId) =>
+      (delete(syncQueue)
+            ..where((t) =>
+                t.entityId.equals(entityId) &
+                (t.status.equalsValue(SyncItemStatus.pending) |
+                    t.status.equalsValue(SyncItemStatus.failed) |
+                    t.status.equalsValue(SyncItemStatus.inFlight))))
+          .go();
+
+  /// Removes a completed item from the queue entirely.
+  Future<void> deleteItem(int id) =>
+      (delete(syncQueue)..where((t) => t.id.equals(id))).go();
 
   Future<void> updateStatus(int id, SyncItemStatus status,
       {String? error, DateTime? nextRetry}) =>

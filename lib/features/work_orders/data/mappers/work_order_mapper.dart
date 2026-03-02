@@ -60,8 +60,8 @@ abstract final class WorkOrderMapper {
         title: j['title'] as String,
         description: j['description'] as String? ?? '',
         status: WorkOrderStatus.values.byName(j['status'] as String),
-        assignedTo: j['assignedTo'] as String,
-        createdBy: j['createdBy'] as String,
+        assignedTo: j['assignedTo'] as String? ?? '',
+        createdBy: j['createdBy'] as String? ?? '',
         createdAt: DateTime.parse(j['createdAt'] as String),
         updatedAt: DateTime.parse(j['updatedAt'] as String),
         completedAt: j['completedAt'] != null
