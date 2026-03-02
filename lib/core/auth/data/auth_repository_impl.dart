@@ -44,6 +44,14 @@ class AuthRepositoryImpl implements AuthRepository {
     _controller.add(null);
   }
 
+  @override
+  Future<List<AppUser>> listUsers() async => [
+        AppUser.mock(Role.admin),
+        AppUser.mock(Role.supervisor),
+        AppUser.mock(Role.worker),
+        AppUser.mock(Role.viewer),
+      ];
+
   Role _roleFromEmail(String email) {
     final lower = email.toLowerCase();
     if (lower.contains('admin')) return Role.admin;

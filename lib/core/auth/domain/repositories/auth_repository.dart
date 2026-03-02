@@ -5,4 +5,5 @@ abstract class AuthRepository {
   Future<AppUser> signIn({required String email, required String password});
   Future<void> signOut();
   Stream<AppUser?> watchCurrentUser();
+  Future<List<AppUser>> listUsers();
 }

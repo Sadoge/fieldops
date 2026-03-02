@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:fieldops/core/permissions/permission.dart';
 import 'package:fieldops/core/providers.dart';
 import 'package:fieldops/core/router/route_names.dart';
@@ -94,7 +95,17 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Detail('Assigned to', order.assignedTo),
+                    _Detail(
+                      'Assigned to',
+                      ref.watch(assignableUsersProvider).maybeWhen(
+                            data: (users) =>
+                                users.firstWhereOrNull(
+                                      (u) => u.id == order.assignedTo,
+                                    )?.displayName ??
+                                order.assignedTo,
+                            orElse: () => order.assignedTo,
+                          ),
+                    ),
                     _Detail('Created by', order.createdBy),
                     _Detail('Created', DateFormatter.formatDateTime(order.createdAt)),
                     _Detail('Updated', DateFormatter.formatDateTime(order.updatedAt)),

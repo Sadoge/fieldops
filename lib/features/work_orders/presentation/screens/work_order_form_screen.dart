@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+import 'package:fieldops/core/providers.dart';
 import 'package:fieldops/features/work_orders/presentation/viewmodels/work_order_detail_viewmodel.dart';
 import 'package:fieldops/features/work_orders/presentation/viewmodels/work_order_form_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +21,6 @@ class _WorkOrderFormScreenState
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
-  final _assignedCtrl = TextEditingController();
   bool _initialized = false;
 
   @override
@@ -27,7 +28,6 @@ class _WorkOrderFormScreenState
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _locationCtrl.dispose();
-    _assignedCtrl.dispose();
     super.dispose();
   }
 
@@ -40,7 +40,6 @@ class _WorkOrderFormScreenState
       _titleCtrl.text = order.title;
       _descCtrl.text = order.description;
       _locationCtrl.text = order.locationLabel ?? '';
-      _assignedCtrl.text = order.assignedTo;
       _initialized = true;
     });
   }
@@ -88,11 +87,28 @@ class _WorkOrderFormScreenState
               onChanged: vm.setLocation,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _assignedCtrl,
-              decoration:
-                  const InputDecoration(labelText: 'Assigned to (user ID)'),
-              onChanged: vm.setAssignedTo,
+            ref.watch(assignableUsersProvider).when(
+              data: (users) {
+                final selected = users.firstWhereOrNull(
+                  (u) => u.id == formState.assignedTo,
+                );
+                return DropdownButtonFormField(
+                  decoration:
+                      const InputDecoration(labelText: 'Assign to'),
+                  initialValue: selected,
+                  items: users
+                      .map((u) => DropdownMenuItem(
+                            value: u,
+                            child:
+                                Text('${u.displayName} (${u.role.name})'),
+                          ))
+                      .toList(),
+                  onChanged: (u) => vm.setAssignedTo(u?.id ?? ''),
+                );
+              },
+              loading: () => const LinearProgressIndicator(),
+              error: (_, __) =>
+                  const Text('Could not load users'),
             ),
             if (formState.errorMessage != null) ...[
               const SizedBox(height: 8),

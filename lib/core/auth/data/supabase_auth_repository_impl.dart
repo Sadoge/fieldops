@@ -45,6 +45,37 @@ class SupabaseAuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> signOut() => _auth.auth.signOut();
 
+  /// Fetches all app users via the `list_app_users` Postgres RPC.
+  /// Run this once in the Supabase SQL editor:
+  ///
+  /// ```sql
+  /// create or replace function public.list_app_users()
+  /// returns table(id uuid, display_name text, email text, role text)
+  /// language sql security definer as $$
+  ///   select id,
+  ///          coalesce(raw_user_meta_data->>'display_name', split_part(email,'@',1)) as display_name,
+  ///          email,
+  ///          coalesce(raw_app_meta_data->>'role', 'viewer') as role
+  ///   from auth.users;
+  /// $$;
+  /// ```
+  @override
+  Future<List<AppUser>> listUsers() async {
+    final rows =
+        await _auth.rpc('list_app_users') as List<dynamic>;
+    return rows.map((r) {
+      final map = r as Map<String, dynamic>;
+      final roleStr = map['role'] as String? ?? 'viewer';
+      final role = Role.values.byName(roleStr);
+      return AppUser(
+        id: map['id'] as String,
+        displayName: map['display_name'] as String,
+        email: map['email'] as String,
+        role: role,
+      );
+    }).toList();
+  }
+
   AppUser _fromSession(Session session) {
     final user = session.user;
     final meta = user.appMetadata;

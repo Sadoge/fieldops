@@ -54,6 +54,10 @@ final currentUserProvider = StreamProvider<AppUser?>(
   (ref) => ref.watch(authRepositoryProvider).watchCurrentUser(),
 );
 
+final assignableUsersProvider = FutureProvider<List<AppUser>>(
+  (ref) => ref.watch(authRepositoryProvider).listUsers(),
+);
+
 // ── Permissions ───────────────────────────────────────────────────────────────
 
 final permissionServiceProvider = Provider<PermissionService>((ref) {
