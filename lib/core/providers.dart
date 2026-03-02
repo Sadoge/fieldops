@@ -37,20 +37,22 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 // ── Backend toggle ─────────────────────────────────────────────────────────────
 // Set to true once SupabaseConfig contains real credentials and Supabase is
 // initialised in main(). Flip this to false to fall back to the local mock.
-const bool useSupabase = false;
+const bool useSupabase = true;
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-final authLocalDatasourceProvider =
-    Provider<AuthLocalDatasource>((_) => AuthLocalDatasource());
+final authLocalDatasourceProvider = Provider<AuthLocalDatasource>(
+  (_) => AuthLocalDatasource(),
+);
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   if (useSupabase) return SupabaseAuthRepositoryImpl();
   return AuthRepositoryImpl(ref.watch(authLocalDatasourceProvider));
 });
 
-final currentUserProvider = StreamProvider<AppUser?>((ref) =>
-    ref.watch(authRepositoryProvider).watchCurrentUser());
+final currentUserProvider = StreamProvider<AppUser?>(
+  (ref) => ref.watch(authRepositoryProvider).watchCurrentUser(),
+);
 
 // ── Permissions ───────────────────────────────────────────────────────────────
 
@@ -72,44 +74,42 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
   return WorkOrderRepositoryImpl(
     dao: db.workOrdersDao,
     syncQueueDao: db.syncQueueDao,
-    auditLogRepo: ref.watch(auditLogRepositoryProvider)
-        as AuditLogRepositoryImpl,
+    auditLogRepo:
+        ref.watch(auditLogRepositoryProvider) as AuditLogRepositoryImpl,
   );
 });
 
 final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return PhotoRepositoryImpl(
-    dao: db.photosDao,
-    syncQueueDao: db.syncQueueDao,
-  );
+  return PhotoRepositoryImpl(dao: db.photosDao, syncQueueDao: db.syncQueueDao);
 });
 
 final noteRepositoryProvider = Provider<NoteRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return NoteRepositoryImpl(
-    dao: db.notesDao,
-    syncQueueDao: db.syncQueueDao,
-  );
+  return NoteRepositoryImpl(dao: db.notesDao, syncQueueDao: db.syncQueueDao);
 });
 
 // ── Sync ──────────────────────────────────────────────────────────────────────
 
 final remoteClientProvider = Provider<RemoteClient>(
-    (_) => useSupabase ? SupabaseRemoteClient() : MockRemoteClient());
+  (_) => useSupabase ? SupabaseRemoteClient() : MockRemoteClient(),
+);
 
-final syncStatusNotifierProvider =
-    Provider<SyncStatusNotifier>((_) => SyncStatusNotifier());
+final syncStatusNotifierProvider = Provider<SyncStatusNotifier>(
+  (_) => SyncStatusNotifier(),
+);
 
 /// Riverpod-friendly wrapper that exposes [SyncState] as a [StateProvider].
-final syncStateProvider =
-    StateProvider<SyncState>((_) => const SyncStateIdle());
+final syncStateProvider = StateProvider<SyncState>(
+  (_) => const SyncStateIdle(),
+);
 
-final conflictResolverProvider = Provider<ConflictResolver>((ref) =>
-    ConflictResolver(
-      workOrderRepo: ref.watch(workOrderRepositoryProvider),
-      auditLogRepo: ref.watch(auditLogRepositoryProvider),
-    ));
+final conflictResolverProvider = Provider<ConflictResolver>(
+  (ref) => ConflictResolver(
+    workOrderRepo: ref.watch(workOrderRepositoryProvider),
+    auditLogRepo: ref.watch(auditLogRepositoryProvider),
+  ),
+);
 
 final syncEngineProvider = Provider<SyncEngine>((ref) {
   final notifier = ref.watch(syncStatusNotifierProvider);
@@ -127,24 +127,24 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   );
 });
 
-final pendingChangesCountProvider = StreamProvider<int>((ref) =>
-    ref.watch(appDatabaseProvider).syncQueueDao.watchPendingCount());
+final pendingChangesCountProvider = StreamProvider<int>(
+  (ref) => ref.watch(appDatabaseProvider).syncQueueDao.watchPendingCount(),
+);
 
 // ── Connectivity ──────────────────────────────────────────────────────────────
 
-final connectivityServiceProvider =
-    Provider<ConnectivityService>((_) => ConnectivityService());
+final connectivityServiceProvider = Provider<ConnectivityService>(
+  (_) => ConnectivityService(),
+);
 
-final isOnlineProvider = StreamProvider<bool>((ref) =>
-    ref.watch(connectivityServiceProvider).onConnectivityChanged);
+final isOnlineProvider = StreamProvider<bool>(
+  (ref) => ref.watch(connectivityServiceProvider).onConnectivityChanged,
+);
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
-final csvExporterProvider =
-    Provider<CsvExporter>((_) => CsvExporter());
+final csvExporterProvider = Provider<CsvExporter>((_) => CsvExporter());
 
-final pdfExporterProvider =
-    Provider<PdfExporter>((_) => PdfExporter());
+final pdfExporterProvider = Provider<PdfExporter>((_) => PdfExporter());
 
-final shareServiceProvider =
-    Provider<ShareService>((_) => ShareService());
+final shareServiceProvider = Provider<ShareService>((_) => ShareService());
