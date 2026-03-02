@@ -63,13 +63,15 @@ class WorkOrderListScreen extends ConsumerWidget {
                           ? FilledButton.icon(
                               icon: const Icon(Icons.add),
                               label: const Text('New Work Order'),
-                              onPressed: () => context.push(RouteNames.workOrderNew),
+                              onPressed: () =>
+                                  context.push(RouteNames.workOrderNew),
                             )
                           : null,
                     )
                   : RefreshIndicator(
                       onRefresh: () => ref.read(syncEngineProvider).sync(),
                       child: ListView.builder(
+                        padding: const EdgeInsets.only(top: 4, bottom: 80),
                         itemCount: orders.length,
                         itemBuilder: (_, i) => WorkOrderCard(
                           order: orders[i],
@@ -100,6 +102,16 @@ class WorkOrderListScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.table_chart_outlined),
               title: const Text('Export as CSV'),
@@ -124,10 +136,11 @@ class WorkOrderListScreen extends ConsumerWidget {
 
   Future<void> _exportCsv(BuildContext context, WidgetRef ref) async {
     try {
-      final orders =
-          await ref.read(workOrderListProvider.future);
+      final orders = await ref.read(workOrderListProvider.future);
       final file = await ref.read(csvExporterProvider).export(orders);
-      await ref.read(shareServiceProvider).shareFile(file.path, subject: 'Work Orders Export');
+      await ref
+          .read(shareServiceProvider)
+          .shareFile(file.path, subject: 'Work Orders Export');
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -138,10 +151,11 @@ class WorkOrderListScreen extends ConsumerWidget {
 
   Future<void> _exportPdf(BuildContext context, WidgetRef ref) async {
     try {
-      final orders =
-          await ref.read(workOrderListProvider.future);
+      final orders = await ref.read(workOrderListProvider.future);
       final file = await ref.read(pdfExporterProvider).export(orders);
-      await ref.read(shareServiceProvider).shareFile(file.path, subject: 'Work Orders Report');
+      await ref
+          .read(shareServiceProvider)
+          .shareFile(file.path, subject: 'Work Orders Report');
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)

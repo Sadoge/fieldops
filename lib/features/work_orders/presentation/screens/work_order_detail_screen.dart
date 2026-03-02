@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:fieldops/core/permissions/permission.dart';
 import 'package:fieldops/core/providers.dart';
 import 'package:fieldops/core/router/route_names.dart';
+import 'package:fieldops/core/theme/app_theme.dart';
 import 'package:fieldops/core/utils/date_formatter.dart';
 import 'package:fieldops/features/notes/presentation/widgets/add_note_sheet.dart';
 import 'package:fieldops/features/notes/presentation/widgets/notes_list.dart';
@@ -34,6 +35,7 @@ class WorkOrderDetailScreen extends ConsumerWidget {
             body: Center(child: Text('Work order not found')),
           );
         }
+        final statusColor = StatusBadge.colorFor(order.status);
         return Scaffold(
           appBar: AppBar(
             title: Text(order.title, overflow: TextOverflow.ellipsis),
@@ -41,8 +43,8 @@ class WorkOrderDetailScreen extends ConsumerWidget {
               if (permService.can(Permission.editWorkOrder))
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
-                  onPressed: () =>
-                      context.push('${RouteNames.workOrderDetailPath(id)}/edit'),
+                  onPressed: () => context
+                      .push('${RouteNames.workOrderDetailPath(id)}/edit'),
                 ),
               if (permService.can(Permission.deleteWorkOrder))
                 IconButton(
@@ -54,15 +56,27 @@ class WorkOrderDetailScreen extends ConsumerWidget {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Status + meta
+              // Status hero band
+              Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Status + dirty chip
               Row(
                 children: [
                   StatusBadge(order.status),
                   const Spacer(),
                   if (order.isDirty)
-                    const Chip(
-                      label: Text('Unsynced', style: TextStyle(fontSize: 11)),
-                      avatar: Icon(Icons.cloud_upload_outlined, size: 14),
+                    Chip(
+                      label: const Text('Unsynced',
+                          style: TextStyle(fontSize: 11)),
+                      avatar: Icon(Icons.cloud_upload_outlined,
+                          size: 14, color: AppColors.orange),
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -85,7 +99,8 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                 _Section(
                   title: 'Location',
                   child: Row(children: [
-                    const Icon(Icons.location_on_outlined, size: 16),
+                    Icon(Icons.location_on_outlined,
+                        size: 16, color: AppColors.statusInProgress),
                     const SizedBox(width: 4),
                     Text(order.locationLabel!),
                   ]),
@@ -99,16 +114,20 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                       'Assigned to',
                       ref.watch(assignableUsersProvider).maybeWhen(
                             data: (users) =>
-                                users.firstWhereOrNull(
+                                users
+                                    .firstWhereOrNull(
                                       (u) => u.id == order.assignedTo,
-                                    )?.displayName ??
+                                    )
+                                    ?.displayName ??
                                 order.assignedTo,
                             orElse: () => order.assignedTo,
                           ),
                     ),
                     _Detail('Created by', order.createdBy),
-                    _Detail('Created', DateFormatter.formatDateTime(order.createdAt)),
-                    _Detail('Updated', DateFormatter.formatDateTime(order.updatedAt)),
+                    _Detail('Created',
+                        DateFormatter.formatDateTime(order.createdAt)),
+                    _Detail('Updated',
+                        DateFormatter.formatDateTime(order.updatedAt)),
                   ],
                 ),
               ),
@@ -128,7 +147,8 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                 trailing: permService.can(Permission.addNote)
                     ? IconButton(
                         icon: const Icon(Icons.add_comment_outlined),
-                        onPressed: () => showAddNoteSheet(context, ref, workOrderId: id),
+                        onPressed: () =>
+                            showAddNoteSheet(context, ref, workOrderId: id),
                       )
                     : null,
                 child: NotesList(workOrderId: id),
@@ -172,7 +192,8 @@ class _StatusChanger extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            const Text('Status:', style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text('Status:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
             const SizedBox(width: 12),
             DropdownButton<WorkOrderStatus>(
               value: current,
@@ -224,22 +245,34 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
+              // Left accent border on section title
+              Container(
+                width: 3,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: AppColors.navy,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.navy,
+                    ),
+              ),
               const Spacer(),
               if (trailing != null) trailing!,
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           child,
         ],
       ),
@@ -256,19 +289,26 @@ class _Detail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 90,
-            child: Text('$label:',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w500, fontSize: 13)),
+            width: 92,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade900),
+            ),
           ),
         ],
       ),
