@@ -39,6 +39,10 @@ class AppDatabase extends _$AppDatabase {
 QueryExecutor _openConnection() {
   return driftDatabase(
     name: 'fieldops',
+    web: DriftWebOptions(
+      sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+      driftWorker: Uri.parse('drift_worker.js'),
+    ),
     native: DriftNativeOptions(
       databasePath: () async {
         final dir = await getApplicationDocumentsDirectory();

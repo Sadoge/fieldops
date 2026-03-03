@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:fieldops/app.dart';
 import 'package:fieldops/core/config/supabase_config.dart';
 import 'package:fieldops/core/database/app_database.dart';
 import 'package:fieldops/core/providers.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -42,11 +41,8 @@ void main() async {
     );
   }
 
-  if (Platform.isAndroid) {
-    await Workmanager().initialize(
-      callbackDispatcher,
-      isInDebugMode: false,
-    );
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
     await Workmanager().registerPeriodicTask(
       _syncTaskId,
       _syncTaskName,
