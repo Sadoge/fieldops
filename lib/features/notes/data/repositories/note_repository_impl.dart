@@ -57,6 +57,18 @@ class NoteRepositoryImpl implements NoteRepository {
   }
 
   @override
+  Future<void> addFromRemote(Map<String, dynamic> payload) async {
+    await dao.upsert(NotesCompanion(
+      id: Value(payload['id'] as String),
+      workOrderId: Value(payload['workOrderId'] as String),
+      body: Value(payload['body'] as String),
+      createdBy: Value(payload['createdBy'] as String? ?? ''),
+      createdAt: Value(DateTime.parse(payload['createdAt'] as String)),
+      isSynced: const Value(true),
+    ));
+  }
+
+  @override
   Future<List<Note>> findUnsynced() async {
     final rows = await dao.findUnsynced();
     return rows

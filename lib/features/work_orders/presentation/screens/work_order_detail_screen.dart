@@ -9,6 +9,8 @@ import 'package:fieldops/features/notes/presentation/widgets/notes_list.dart';
 import 'package:fieldops/features/photos/presentation/widgets/photo_capture_button.dart';
 import 'package:fieldops/features/photos/presentation/widgets/photo_grid.dart';
 import 'package:fieldops/features/work_orders/domain/entities/work_order_status.dart';
+import 'package:fieldops/core/realtime/presence_user.dart';
+import 'package:fieldops/features/work_orders/presentation/viewmodels/realtime_work_order_notifier.dart';
 import 'package:fieldops/features/work_orders/presentation/viewmodels/work_order_detail_viewmodel.dart';
 import 'package:fieldops/features/work_orders/presentation/widgets/status_badge.dart';
 import 'package:fieldops/shared/widgets/confirm_dialog.dart';
@@ -25,6 +27,11 @@ class WorkOrderDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Activate realtime subscription — autoDispose tears it down on pop.
+    ref.watch(realtimeWorkOrderProvider(id));
+    final presenceAsync = ref.watch(workOrderPresenceProvider(id));
+    final currentUserId = ref.watch(currentUserProvider).valueOrNull?.id;
+
     final orderAsync = ref.watch(workOrderDetailProvider(id));
     final permService = ref.watch(permissionServiceProvider);
 
@@ -56,6 +63,19 @@ class WorkOrderDetailScreen extends ConsumerWidget {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Presence bar — shows other users currently viewing this order
+              presenceAsync.whenData((users) {
+                final others = users
+                    .where((u) => u.userId != currentUserId)
+                    .toList();
+                if (others.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _PresenceBar(users: others),
+                );
+              }).valueOrNull ??
+                  const SizedBox.shrink(),
+
               // Status hero band
               Container(
                 height: 4,
@@ -313,5 +333,94 @@ class _Detail extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _PresenceBar extends StatelessWidget {
+  const _PresenceBar({required this.users});
+
+  final List<PresenceUser> users;
+
+  @override
+  Widget build(BuildContext context) {
+    final editing = users.where((u) => u.isEditing).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.visibility_outlined,
+                size: 13, color: Colors.grey.shade500),
+            const SizedBox(width: 4),
+            ...users.map((u) => _Avatar(user: u)),
+            const SizedBox(width: 4),
+            Text(
+              '${users.length} viewing',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+        if (editing.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.edit, size: 11, color: AppColors.statusInProgress),
+              const SizedBox(width: 4),
+              Text(
+                '${editing.map((u) => u.displayName).join(', ')} '
+                '${editing.length == 1 ? 'is' : 'are'} editing…',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.statusInProgress,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.user});
+
+  final PresenceUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials =
+        user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : '?';
+    return Tooltip(
+      message: user.displayName,
+      child: Container(
+        width: 24,
+        height: 24,
+        margin: const EdgeInsets.only(right: 2),
+        decoration: BoxDecoration(
+          color: _colorFor(user.userId),
+          shape: BoxShape.circle,
+          border: user.isEditing
+              ? Border.all(color: AppColors.statusInProgress, width: 1.5)
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Deterministic colour from user ID hash — consistent across rebuilds.
+  Color _colorFor(String userId) {
+    final hue = (userId.hashCode.abs() % 360).toDouble();
+    return HSLColor.fromAHSL(1.0, hue, 0.6, 0.45).toColor();
   }
 }

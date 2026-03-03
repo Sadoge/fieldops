@@ -23,6 +23,9 @@ import 'package:fieldops/features/notes/data/repositories/note_repository_impl.d
 import 'package:fieldops/features/notes/domain/repositories/note_repository.dart';
 import 'package:fieldops/features/photos/data/repositories/photo_repository_impl.dart';
 import 'package:fieldops/features/photos/domain/repositories/photo_repository.dart';
+import 'package:fieldops/core/realtime/no_op_realtime_service.dart';
+import 'package:fieldops/core/realtime/realtime_service.dart';
+import 'package:fieldops/core/realtime/supabase_realtime_service.dart';
 import 'package:fieldops/features/work_orders/data/repositories/work_order_repository_impl.dart';
 import 'package:fieldops/features/work_orders/domain/repositories/work_order_repository.dart';
 
@@ -151,6 +154,15 @@ final connectivityServiceProvider = Provider<ConnectivityService>(
 final isOnlineProvider = StreamProvider<bool>(
   (ref) => ref.watch(connectivityServiceProvider).onConnectivityChanged,
 );
+
+// ── Realtime ──────────────────────────────────────────────────────────────────
+
+final realtimeServiceProvider = Provider<RealtimeService>((ref) {
+  final svc =
+      useSupabase ? SupabaseRealtimeService() : NoOpRealtimeService();
+  ref.onDispose(svc.dispose);
+  return svc;
+});
 
 // ── Export ────────────────────────────────────────────────────────────────────
 

@@ -46,3 +46,5 @@ app.*.map.json
 
 # Credentials — fill in your own values, never commit real keys
 lib/core/config/supabase_config.dart
+
+.claude/settings.json

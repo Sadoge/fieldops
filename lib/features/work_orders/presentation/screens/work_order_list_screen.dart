@@ -1,5 +1,6 @@
 import 'package:fieldops/core/permissions/permission.dart';
 import 'package:fieldops/core/providers.dart';
+import 'package:fieldops/core/theme/app_theme.dart';
 import 'package:fieldops/core/router/route_names.dart';
 import 'package:fieldops/features/work_orders/presentation/viewmodels/work_order_list_viewmodel.dart';
 import 'package:fieldops/features/work_orders/presentation/widgets/sync_status_banner.dart';
@@ -52,6 +53,7 @@ class WorkOrderListScreen extends ConsumerWidget {
       body: Column(
         children: [
           const SyncStatusBanner(),
+          const _RealtimeUpdateBanner(),
           const WorkOrderFilterBar(),
           Expanded(
             child: ordersAsync.when(
@@ -162,5 +164,55 @@ class WorkOrderListScreen extends ConsumerWidget {
             .showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     }
+  }
+}
+
+class _RealtimeUpdateBanner extends ConsumerWidget {
+  const _RealtimeUpdateBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasUpdates = ref.watch(listUpdateProvider);
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      child: hasUpdates
+          ? GestureDetector(
+              onTap: () {
+                ref.read(syncEngineProvider).sync();
+                ref.read(listUpdateProvider.notifier).dismiss();
+              },
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.navy.withAlpha(20),
+                  border: Border(
+                    bottom: BorderSide(
+                        color: AppColors.navy.withAlpha(60), width: 0.5),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 6),
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh,
+                        size: 13, color: AppColors.navy),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Board outdated — tap to refresh',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.navy,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.close, size: 13, color: AppColors.navy),
+                  ],
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
   }
 }

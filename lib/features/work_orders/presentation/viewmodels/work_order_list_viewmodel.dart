@@ -4,6 +4,29 @@ import 'package:fieldops/features/work_orders/domain/entities/work_order_filter.
 import 'package:fieldops/features/work_orders/domain/entities/work_order_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// ── Realtime list update banner ───────────────────────────────────────────────
+
+/// True when a remote work order change has arrived since the user last
+/// acknowledged it. Cleared when the user taps the "Updates available" banner.
+class _ListUpdateNotifier extends AutoDisposeNotifier<bool> {
+  @override
+  bool build() {
+    final sub = ref
+        .watch(realtimeServiceProvider)
+        .watchWorkOrderList()
+        .listen((_) => state = true);
+    ref.onDispose(sub.cancel);
+    return false;
+  }
+
+  void dismiss() => state = false;
+}
+
+final listUpdateProvider =
+    AutoDisposeNotifierProvider<_ListUpdateNotifier, bool>(
+  _ListUpdateNotifier.new,
+);
+
 // ── Filter ViewModel ──────────────────────────────────────────────────────────
 
 class ActiveFilterNotifier extends Notifier<WorkOrderFilter> {
