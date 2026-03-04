@@ -8,6 +8,7 @@ import 'package:fieldops/features/notes/presentation/widgets/add_note_sheet.dart
 import 'package:fieldops/features/notes/presentation/widgets/notes_list.dart';
 import 'package:fieldops/features/photos/presentation/widgets/photo_capture_button.dart';
 import 'package:fieldops/features/photos/presentation/widgets/photo_grid.dart';
+import 'package:fieldops/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:fieldops/features/work_orders/domain/entities/work_order_status.dart';
 import 'package:fieldops/core/realtime/presence_user.dart';
 import 'package:fieldops/features/work_orders/presentation/viewmodels/realtime_work_order_notifier.dart';
@@ -65,15 +66,14 @@ class WorkOrderDetailScreen extends ConsumerWidget {
             children: [
               // Presence bar — shows other users currently viewing this order
               presenceAsync.whenData((users) {
-                final others = users
-                    .where((u) => u.userId != currentUserId)
-                    .toList();
-                if (others.isEmpty) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _PresenceBar(users: others),
-                );
-              }).valueOrNull ??
+                    final others =
+                        users.where((u) => u.userId != currentUserId).toList();
+                    if (others.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _PresenceBar(users: others),
+                    );
+                  }).valueOrNull ??
                   const SizedBox.shrink(),
 
               // Status hero band
@@ -86,19 +86,27 @@ class WorkOrderDetailScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
 
-              // Status + dirty chip
-              Row(
+              // Status + SLA context
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   StatusBadge(order.status),
-                  const Spacer(),
+                  _PriorityChip(priority: order.priority),
+                  if (order.dueAt != null)
+                    _SlaChip(
+                      label: order.isOverdue
+                          ? DateFormatter.relativeDeadline(order.dueAt!)
+                          : order.isClosed
+                              ? 'Due ${DateFormatter.formatDate(order.dueAt!)}'
+                              : DateFormatter.relativeDeadline(order.dueAt!),
+                      isOverdue: order.isOverdue,
+                    ),
                   if (order.isDirty)
-                    Chip(
-                      label: const Text('Unsynced',
-                          style: TextStyle(fontSize: 11)),
-                      avatar: Icon(Icons.cloud_upload_outlined,
-                          size: 14, color: AppColors.orange),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
+                    const WorkOrderPillChip(
+                      label: 'Unsynced',
+                      icon: Icons.cloud_upload_outlined,
+                      color: AppColors.orange,
                     ),
                 ],
               ),
@@ -142,6 +150,23 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                                 order.assignedTo,
                             orElse: () => order.assignedTo,
                           ),
+                    ),
+                    _Detail('Priority', _priorityLabel(order.priority)),
+                    _Detail(
+                      'Due by',
+                      order.dueAt == null
+                          ? 'No due date set'
+                          : DateFormatter.formatDateTime(order.dueAt!),
+                    ),
+                    _Detail(
+                      'SLA',
+                      order.dueAt == null
+                          ? 'Not tracked'
+                          : order.isOverdue
+                              ? DateFormatter.relativeDeadline(order.dueAt!)
+                              : order.isClosed
+                                  ? 'Closed'
+                                  : 'On track',
                     ),
                     _Detail('Created by', order.createdBy),
                     _Detail('Created',
@@ -196,6 +221,13 @@ class WorkOrderDetailScreen extends ConsumerWidget {
       if (context.mounted) context.pop();
     }
   }
+
+  String _priorityLabel(WorkOrderPriority priority) => switch (priority) {
+        WorkOrderPriority.low => 'Low',
+        WorkOrderPriority.medium => 'Medium',
+        WorkOrderPriority.high => 'High',
+        WorkOrderPriority.urgent => 'Urgent',
+      };
 }
 
 class _StatusChanger extends ConsumerWidget {
@@ -226,8 +258,9 @@ class _StatusChanger extends ConsumerWidget {
                   .toList(),
               onChanged: (s) async {
                 if (s == null || s == current) return;
-                final order =
-                    await ref.read(workOrderRepositoryProvider).findById(orderId);
+                final order = await ref
+                    .read(workOrderRepositoryProvider)
+                    .findById(orderId);
                 if (order != null) {
                   await ref.read(workOrderRepositoryProvider).save(
                         order.copyWith(
@@ -253,6 +286,53 @@ class _StatusChanger extends ConsumerWidget {
         WorkOrderStatus.completed => 'Completed',
         WorkOrderStatus.verified => 'Verified',
       };
+}
+
+class _PriorityChip extends StatelessWidget {
+  const _PriorityChip({required this.priority});
+
+  final WorkOrderPriority priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (priority) {
+      WorkOrderPriority.low => Colors.blueGrey,
+      WorkOrderPriority.medium => AppColors.statusNew,
+      WorkOrderPriority.high => AppColors.orange,
+      WorkOrderPriority.urgent => const Color(0xFFB71C1C),
+    };
+    final label = switch (priority) {
+      WorkOrderPriority.low => 'Low',
+      WorkOrderPriority.medium => 'Medium',
+      WorkOrderPriority.high => 'High',
+      WorkOrderPriority.urgent => 'Urgent',
+    };
+    return WorkOrderPillChip(
+      label: label,
+      icon: Icons.flag_outlined,
+      color: color,
+    );
+  }
+}
+
+class _SlaChip extends StatelessWidget {
+  const _SlaChip({required this.label, required this.isOverdue});
+
+  final String label;
+  final bool isOverdue;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        isOverdue ? Theme.of(context).colorScheme.error : AppColors.navy;
+    return WorkOrderPillChip(
+      label: label,
+      icon: isOverdue ? Icons.warning_amber_rounded : Icons.schedule_outlined,
+      color: color,
+      backgroundAlpha: 16,
+      borderAlpha: 36,
+    );
+  }
 }
 
 class _Section extends StatelessWidget {

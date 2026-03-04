@@ -48,6 +48,16 @@ class $WorkOrdersTable extends WorkOrders
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<WorkOrderStatus>($WorkOrdersTable.$converterstatus);
+  @override
+  late final GeneratedColumnWithTypeConverter<WorkOrderPriority, String>
+  priority = GeneratedColumn<String>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('medium'),
+  ).withConverter<WorkOrderPriority>($WorkOrdersTable.$converterpriority);
   static const VerificationMeta _assignedToMeta = const VerificationMeta(
     'assignedTo',
   );
@@ -91,6 +101,15 @@ class $WorkOrdersTable extends WorkOrders
     false,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dueAtMeta = const VerificationMeta('dueAt');
+  @override
+  late final GeneratedColumn<DateTime> dueAt = GeneratedColumn<DateTime>(
+    'due_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _completedAtMeta = const VerificationMeta(
     'completedAt',
@@ -169,10 +188,12 @@ class $WorkOrdersTable extends WorkOrders
     title,
     description,
     status,
+    priority,
     assignedTo,
     createdBy,
     createdAt,
     updatedAt,
+    dueAt,
     completedAt,
     locationLabel,
     remoteId,
@@ -245,6 +266,12 @@ class $WorkOrdersTable extends WorkOrders
       );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('due_at')) {
+      context.handle(
+        _dueAtMeta,
+        dueAt.isAcceptableOrUnknown(data['due_at']!, _dueAtMeta),
+      );
     }
     if (data.containsKey('completed_at')) {
       context.handle(
@@ -321,6 +348,12 @@ class $WorkOrdersTable extends WorkOrders
           data['${effectivePrefix}status'],
         )!,
       ),
+      priority: $WorkOrdersTable.$converterpriority.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}priority'],
+        )!,
+      ),
       assignedTo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}assigned_to'],
@@ -337,6 +370,10 @@ class $WorkOrdersTable extends WorkOrders
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
+      dueAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}due_at'],
+      ),
       completedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}completed_at'],
@@ -371,6 +408,10 @@ class $WorkOrdersTable extends WorkOrders
 
   static JsonTypeConverter2<WorkOrderStatus, String, String> $converterstatus =
       const EnumNameConverter<WorkOrderStatus>(WorkOrderStatus.values);
+  static JsonTypeConverter2<WorkOrderPriority, String, String>
+  $converterpriority = const EnumNameConverter<WorkOrderPriority>(
+    WorkOrderPriority.values,
+  );
 }
 
 class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
@@ -378,10 +419,12 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
   final String title;
   final String description;
   final WorkOrderStatus status;
+  final WorkOrderPriority priority;
   final String assignedTo;
   final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? dueAt;
   final DateTime? completedAt;
   final String? locationLabel;
   final String? remoteId;
@@ -393,10 +436,12 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
     required this.title,
     required this.description,
     required this.status,
+    required this.priority,
     required this.assignedTo,
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
+    this.dueAt,
     this.completedAt,
     this.locationLabel,
     this.remoteId,
@@ -415,10 +460,18 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
         $WorkOrdersTable.$converterstatus.toSql(status),
       );
     }
+    {
+      map['priority'] = Variable<String>(
+        $WorkOrdersTable.$converterpriority.toSql(priority),
+      );
+    }
     map['assigned_to'] = Variable<String>(assignedTo);
     map['created_by'] = Variable<String>(createdBy);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || dueAt != null) {
+      map['due_at'] = Variable<DateTime>(dueAt);
+    }
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<DateTime>(completedAt);
     }
@@ -442,10 +495,14 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
       title: Value(title),
       description: Value(description),
       status: Value(status),
+      priority: Value(priority),
       assignedTo: Value(assignedTo),
       createdBy: Value(createdBy),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      dueAt: dueAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueAt),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(completedAt),
@@ -475,10 +532,14 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
       status: $WorkOrdersTable.$converterstatus.fromJson(
         serializer.fromJson<String>(json['status']),
       ),
+      priority: $WorkOrdersTable.$converterpriority.fromJson(
+        serializer.fromJson<String>(json['priority']),
+      ),
       assignedTo: serializer.fromJson<String>(json['assignedTo']),
       createdBy: serializer.fromJson<String>(json['createdBy']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      dueAt: serializer.fromJson<DateTime?>(json['dueAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       locationLabel: serializer.fromJson<String?>(json['locationLabel']),
       remoteId: serializer.fromJson<String?>(json['remoteId']),
@@ -497,10 +558,14 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
       'status': serializer.toJson<String>(
         $WorkOrdersTable.$converterstatus.toJson(status),
       ),
+      'priority': serializer.toJson<String>(
+        $WorkOrdersTable.$converterpriority.toJson(priority),
+      ),
       'assignedTo': serializer.toJson<String>(assignedTo),
       'createdBy': serializer.toJson<String>(createdBy),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'dueAt': serializer.toJson<DateTime?>(dueAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'locationLabel': serializer.toJson<String?>(locationLabel),
       'remoteId': serializer.toJson<String?>(remoteId),
@@ -515,10 +580,12 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
     String? title,
     String? description,
     WorkOrderStatus? status,
+    WorkOrderPriority? priority,
     String? assignedTo,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Value<DateTime?> dueAt = const Value.absent(),
     Value<DateTime?> completedAt = const Value.absent(),
     Value<String?> locationLabel = const Value.absent(),
     Value<String?> remoteId = const Value.absent(),
@@ -530,10 +597,12 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
     title: title ?? this.title,
     description: description ?? this.description,
     status: status ?? this.status,
+    priority: priority ?? this.priority,
     assignedTo: assignedTo ?? this.assignedTo,
     createdBy: createdBy ?? this.createdBy,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    dueAt: dueAt.present ? dueAt.value : this.dueAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     locationLabel: locationLabel.present
         ? locationLabel.value
@@ -553,12 +622,14 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
           ? data.description.value
           : this.description,
       status: data.status.present ? data.status.value : this.status,
+      priority: data.priority.present ? data.priority.value : this.priority,
       assignedTo: data.assignedTo.present
           ? data.assignedTo.value
           : this.assignedTo,
       createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      dueAt: data.dueAt.present ? data.dueAt.value : this.dueAt,
       completedAt: data.completedAt.present
           ? data.completedAt.value
           : this.completedAt,
@@ -583,10 +654,12 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('status: $status, ')
+          ..write('priority: $priority, ')
           ..write('assignedTo: $assignedTo, ')
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('dueAt: $dueAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('locationLabel: $locationLabel, ')
           ..write('remoteId: $remoteId, ')
@@ -603,10 +676,12 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
     title,
     description,
     status,
+    priority,
     assignedTo,
     createdBy,
     createdAt,
     updatedAt,
+    dueAt,
     completedAt,
     locationLabel,
     remoteId,
@@ -622,10 +697,12 @@ class WorkOrderRow extends DataClass implements Insertable<WorkOrderRow> {
           other.title == this.title &&
           other.description == this.description &&
           other.status == this.status &&
+          other.priority == this.priority &&
           other.assignedTo == this.assignedTo &&
           other.createdBy == this.createdBy &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
+          other.dueAt == this.dueAt &&
           other.completedAt == this.completedAt &&
           other.locationLabel == this.locationLabel &&
           other.remoteId == this.remoteId &&
@@ -639,10 +716,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
   final Value<String> title;
   final Value<String> description;
   final Value<WorkOrderStatus> status;
+  final Value<WorkOrderPriority> priority;
   final Value<String> assignedTo;
   final Value<String> createdBy;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<DateTime?> dueAt;
   final Value<DateTime?> completedAt;
   final Value<String?> locationLabel;
   final Value<String?> remoteId;
@@ -655,10 +734,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
     this.title = const Value.absent(),
     this.description = const Value.absent(),
     this.status = const Value.absent(),
+    this.priority = const Value.absent(),
     this.assignedTo = const Value.absent(),
     this.createdBy = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.dueAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.locationLabel = const Value.absent(),
     this.remoteId = const Value.absent(),
@@ -672,10 +753,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
     required String title,
     this.description = const Value.absent(),
     required WorkOrderStatus status,
+    this.priority = const Value.absent(),
     required String assignedTo,
     required String createdBy,
     required DateTime createdAt,
     required DateTime updatedAt,
+    this.dueAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.locationLabel = const Value.absent(),
     this.remoteId = const Value.absent(),
@@ -695,10 +778,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
     Expression<String>? title,
     Expression<String>? description,
     Expression<String>? status,
+    Expression<String>? priority,
     Expression<String>? assignedTo,
     Expression<String>? createdBy,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? dueAt,
     Expression<DateTime>? completedAt,
     Expression<String>? locationLabel,
     Expression<String>? remoteId,
@@ -712,10 +797,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (status != null) 'status': status,
+      if (priority != null) 'priority': priority,
       if (assignedTo != null) 'assigned_to': assignedTo,
       if (createdBy != null) 'created_by': createdBy,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (dueAt != null) 'due_at': dueAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (locationLabel != null) 'location_label': locationLabel,
       if (remoteId != null) 'remote_id': remoteId,
@@ -731,10 +818,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
     Value<String>? title,
     Value<String>? description,
     Value<WorkOrderStatus>? status,
+    Value<WorkOrderPriority>? priority,
     Value<String>? assignedTo,
     Value<String>? createdBy,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
+    Value<DateTime?>? dueAt,
     Value<DateTime?>? completedAt,
     Value<String?>? locationLabel,
     Value<String?>? remoteId,
@@ -748,10 +837,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
+      priority: priority ?? this.priority,
       assignedTo: assignedTo ?? this.assignedTo,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      dueAt: dueAt ?? this.dueAt,
       completedAt: completedAt ?? this.completedAt,
       locationLabel: locationLabel ?? this.locationLabel,
       remoteId: remoteId ?? this.remoteId,
@@ -779,6 +870,11 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
         $WorkOrdersTable.$converterstatus.toSql(status.value),
       );
     }
+    if (priority.present) {
+      map['priority'] = Variable<String>(
+        $WorkOrdersTable.$converterpriority.toSql(priority.value),
+      );
+    }
     if (assignedTo.present) {
       map['assigned_to'] = Variable<String>(assignedTo.value);
     }
@@ -790,6 +886,9 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (dueAt.present) {
+      map['due_at'] = Variable<DateTime>(dueAt.value);
     }
     if (completedAt.present) {
       map['completed_at'] = Variable<DateTime>(completedAt.value);
@@ -822,10 +921,12 @@ class WorkOrdersCompanion extends UpdateCompanion<WorkOrderRow> {
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('status: $status, ')
+          ..write('priority: $priority, ')
           ..write('assignedTo: $assignedTo, ')
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('dueAt: $dueAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('locationLabel: $locationLabel, ')
           ..write('remoteId: $remoteId, ')
@@ -2968,10 +3069,12 @@ typedef $$WorkOrdersTableCreateCompanionBuilder =
       required String title,
       Value<String> description,
       required WorkOrderStatus status,
+      Value<WorkOrderPriority> priority,
       required String assignedTo,
       required String createdBy,
       required DateTime createdAt,
       required DateTime updatedAt,
+      Value<DateTime?> dueAt,
       Value<DateTime?> completedAt,
       Value<String?> locationLabel,
       Value<String?> remoteId,
@@ -2986,10 +3089,12 @@ typedef $$WorkOrdersTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String> description,
       Value<WorkOrderStatus> status,
+      Value<WorkOrderPriority> priority,
       Value<String> assignedTo,
       Value<String> createdBy,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<DateTime?> dueAt,
       Value<DateTime?> completedAt,
       Value<String?> locationLabel,
       Value<String?> remoteId,
@@ -3072,6 +3177,12 @@ class $$WorkOrdersTableFilterComposer
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
+  ColumnWithTypeConverterFilters<WorkOrderPriority, WorkOrderPriority, String>
+  get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
   ColumnFilters<String> get assignedTo => $composableBuilder(
     column: $table.assignedTo,
     builder: (column) => ColumnFilters(column),
@@ -3089,6 +3200,11 @@ class $$WorkOrdersTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get dueAt => $composableBuilder(
+    column: $table.dueAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3202,6 +3318,11 @@ class $$WorkOrdersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get assignedTo => $composableBuilder(
     column: $table.assignedTo,
     builder: (column) => ColumnOrderings(column),
@@ -3219,6 +3340,11 @@ class $$WorkOrdersTableOrderingComposer
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get dueAt => $composableBuilder(
+    column: $table.dueAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3276,6 +3402,9 @@ class $$WorkOrdersTableAnnotationComposer
   GeneratedColumnWithTypeConverter<WorkOrderStatus, String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumnWithTypeConverter<WorkOrderPriority, String> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
+
   GeneratedColumn<String> get assignedTo => $composableBuilder(
     column: $table.assignedTo,
     builder: (column) => column,
@@ -3289,6 +3418,9 @@ class $$WorkOrdersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get dueAt =>
+      $composableBuilder(column: $table.dueAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get completedAt => $composableBuilder(
     column: $table.completedAt,
@@ -3399,10 +3531,12 @@ class $$WorkOrdersTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String> description = const Value.absent(),
                 Value<WorkOrderStatus> status = const Value.absent(),
+                Value<WorkOrderPriority> priority = const Value.absent(),
                 Value<String> assignedTo = const Value.absent(),
                 Value<String> createdBy = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> dueAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> locationLabel = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
@@ -3415,10 +3549,12 @@ class $$WorkOrdersTableTableManager
                 title: title,
                 description: description,
                 status: status,
+                priority: priority,
                 assignedTo: assignedTo,
                 createdBy: createdBy,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                dueAt: dueAt,
                 completedAt: completedAt,
                 locationLabel: locationLabel,
                 remoteId: remoteId,
@@ -3433,10 +3569,12 @@ class $$WorkOrdersTableTableManager
                 required String title,
                 Value<String> description = const Value.absent(),
                 required WorkOrderStatus status,
+                Value<WorkOrderPriority> priority = const Value.absent(),
                 required String assignedTo,
                 required String createdBy,
                 required DateTime createdAt,
                 required DateTime updatedAt,
+                Value<DateTime?> dueAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> locationLabel = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
@@ -3449,10 +3587,12 @@ class $$WorkOrdersTableTableManager
                 title: title,
                 description: description,
                 status: status,
+                priority: priority,
                 assignedTo: assignedTo,
                 createdBy: createdBy,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                dueAt: dueAt,
                 completedAt: completedAt,
                 locationLabel: locationLabel,
                 remoteId: remoteId,

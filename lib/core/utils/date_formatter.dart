@@ -15,4 +15,20 @@ abstract final class DateFormatter {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return formatDate(dt);
   }
+
+  static String relativeDeadline(DateTime dt) {
+    final diff = dt.difference(DateTime.now());
+    final label = _compactDuration(diff.abs());
+    return diff.isNegative ? '$label overdue' : 'due in $label';
+  }
+
+  static String _compactDuration(Duration duration) {
+    if (duration.inMinutes < 60) {
+      final minutes = duration.inMinutes == 0 ? 1 : duration.inMinutes;
+      return '${minutes}m';
+    }
+    if (duration.inHours < 24) return '${duration.inHours}h';
+    if (duration.inDays < 7) return '${duration.inDays}d';
+    return '${(duration.inDays / 7).ceil()}w';
+  }
 }

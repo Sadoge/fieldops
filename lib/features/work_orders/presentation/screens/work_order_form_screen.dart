@@ -1,5 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:fieldops/core/providers.dart';
+import 'package:fieldops/core/utils/date_formatter.dart';
+import 'package:fieldops/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:fieldops/features/work_orders/presentation/viewmodels/work_order_detail_viewmodel.dart';
 import 'package:fieldops/features/work_orders/presentation/viewmodels/work_order_form_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +18,7 @@ class WorkOrderFormScreen extends ConsumerStatefulWidget {
       _WorkOrderFormScreenState();
 }
 
-class _WorkOrderFormScreenState
-    extends ConsumerState<WorkOrderFormScreen> {
+class _WorkOrderFormScreenState extends ConsumerState<WorkOrderFormScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
@@ -50,6 +51,35 @@ class _WorkOrderFormScreenState
     if (success && mounted) context.pop();
   }
 
+  Future<void> _pickDueAt() async {
+    final vm = ref.read(workOrderFormViewModelProvider.notifier);
+    final state = ref.read(workOrderFormViewModelProvider);
+    final initial = (state.dueAt ?? DateTime.now()).toLocal();
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (pickedTime == null) return;
+
+    final localDueAt = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+    vm.setDueAt(localDueAt.toUtc());
+  }
+
   @override
   Widget build(BuildContext context) {
     _initFromExisting(ref);
@@ -58,9 +88,8 @@ class _WorkOrderFormScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.existingId == null
-            ? 'New Work Order'
-            : 'Edit Work Order'),
+        title: Text(
+            widget.existingId == null ? 'New Work Order' : 'Edit Work Order'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -87,35 +116,78 @@ class _WorkOrderFormScreenState
               onChanged: vm.setLocation,
             ),
             const SizedBox(height: 12),
-            ref.watch(assignableUsersProvider).when(
-              data: (users) {
-                final selected = users.firstWhereOrNull(
-                  (u) => u.id == formState.assignedTo,
-                );
-                return DropdownButtonFormField(
-                  decoration:
-                      const InputDecoration(labelText: 'Assign to'),
-                  initialValue: selected,
-                  items: users
-                      .map((u) => DropdownMenuItem(
-                            value: u,
-                            child:
-                                Text('${u.displayName} (${u.role.name})'),
-                          ))
-                      .toList(),
-                  onChanged: (u) => vm.setAssignedTo(u?.id ?? ''),
-                );
+            DropdownButtonFormField<WorkOrderPriority>(
+              decoration: const InputDecoration(labelText: 'Priority'),
+              initialValue: formState.priority,
+              items: WorkOrderPriority.values
+                  .map((priority) => DropdownMenuItem(
+                        value: priority,
+                        child: Text(_priorityLabel(priority)),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) vm.setPriority(value);
               },
-              loading: () => const LinearProgressIndicator(),
-              error: (_, __) =>
-                  const Text('Could not load users'),
             ),
+            const SizedBox(height: 12),
+            InputDecorator(
+              decoration: const InputDecoration(labelText: 'Due date'),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      formState.dueAt == null
+                          ? 'No due date set'
+                          : DateFormatter.formatDateTime(formState.dueAt!),
+                      style: TextStyle(
+                        color: formState.dueAt == null
+                            ? Theme.of(context).hintColor
+                            : null,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _pickDueAt,
+                    child: Text(
+                      formState.dueAt == null ? 'Set' : 'Change',
+                    ),
+                  ),
+                  if (formState.dueAt != null)
+                    IconButton(
+                      tooltip: 'Clear due date',
+                      onPressed: () => vm.setDueAt(null),
+                      icon: const Icon(Icons.clear),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            ref.watch(assignableUsersProvider).when(
+                  data: (users) {
+                    final selected = users.firstWhereOrNull(
+                      (u) => u.id == formState.assignedTo,
+                    );
+                    return DropdownButtonFormField(
+                      decoration: const InputDecoration(labelText: 'Assign to'),
+                      initialValue: selected,
+                      items: users
+                          .map((u) => DropdownMenuItem(
+                                value: u,
+                                child:
+                                    Text('${u.displayName} (${u.role.name})'),
+                              ))
+                          .toList(),
+                      onChanged: (u) => vm.setAssignedTo(u?.id ?? ''),
+                    );
+                  },
+                  loading: () => const LinearProgressIndicator(),
+                  error: (_, __) => const Text('Could not load users'),
+                ),
             if (formState.errorMessage != null) ...[
               const SizedBox(height: 8),
               Text(
                 formState.errorMessage!,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.error),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
             const SizedBox(height: 24),
@@ -125,8 +197,7 @@ class _WorkOrderFormScreenState
                   ? const SizedBox(
                       height: 18,
                       width: 18,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2))
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : Text(widget.existingId == null
                       ? 'Create Work Order'
                       : 'Save Changes'),
@@ -136,4 +207,11 @@ class _WorkOrderFormScreenState
       ),
     );
   }
+
+  String _priorityLabel(WorkOrderPriority priority) => switch (priority) {
+        WorkOrderPriority.low => 'Low',
+        WorkOrderPriority.medium => 'Medium',
+        WorkOrderPriority.high => 'High',
+        WorkOrderPriority.urgent => 'Urgent',
+      };
 }

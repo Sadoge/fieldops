@@ -2,6 +2,7 @@ import 'package:fieldops/core/database/tables/audit_log_table.dart';
 import 'package:fieldops/core/sync/conflict_resolver.dart';
 import 'package:fieldops/features/audit_log/domain/repositories/audit_log_repository.dart';
 import 'package:fieldops/features/work_orders/domain/entities/work_order.dart';
+import 'package:fieldops/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:fieldops/features/work_orders/domain/entities/work_order_status.dart';
 import 'package:fieldops/features/work_orders/domain/repositories/work_order_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +13,6 @@ class MockWorkOrderRepository extends Mock implements WorkOrderRepository {}
 class MockAuditLogRepository extends Mock implements AuditLogRepository {}
 
 class FakeWorkOrder extends Fake implements WorkOrder {}
-
 
 WorkOrder _baseOrder({
   String id = 'order-1',
@@ -26,6 +26,7 @@ WorkOrder _baseOrder({
       title: 'Test Order',
       description: 'desc',
       status: status,
+      priority: WorkOrderPriority.medium,
       assignedTo: 'user-1',
       createdBy: 'user-1',
       createdAt: DateTime(2024),
@@ -41,10 +42,12 @@ Map<String, dynamic> _remotePayload(WorkOrder order) => {
       'title': order.title,
       'description': order.description,
       'status': order.status.name,
+      'priority': order.priority.name,
       'assignedTo': order.assignedTo,
       'createdBy': order.createdBy,
       'createdAt': order.createdAt.toIso8601String(),
       'updatedAt': order.updatedAt.toIso8601String(),
+      'dueAt': null,
       'completedAt': null,
       'locationLabel': null,
       'remoteId': null,
@@ -73,6 +76,7 @@ void main() {
 
     // Default stubs
     when(() => workOrderRepo.save(any())).thenAnswer((_) async {});
+    when(() => workOrderRepo.updateLocalOnly(any())).thenAnswer((_) async {});
     when(() => auditLogRepo.record(
           workOrderId: any(named: 'workOrderId'),
           action: any(named: 'action'),
@@ -103,9 +107,9 @@ void main() {
 
       await resolver.resolveIncoming(_remotePayload(remote));
 
-      final captured =
-          verify(() => workOrderRepo.save(captureAny())).captured.single
-              as WorkOrder;
+      final captured = verify(
+        () => workOrderRepo.updateLocalOnly(captureAny()),
+      ).captured.single as WorkOrder;
       expect(captured.id, equals('order-1'));
       expect(captured.isDirty, isFalse);
     });
@@ -120,7 +124,7 @@ void main() {
 
       await resolver.resolveIncoming(_remotePayload(remote));
 
-      verify(() => workOrderRepo.save(any())).called(1);
+      verify(() => workOrderRepo.updateLocalOnly(any())).called(1);
       verifyNever(() => auditLogRepo.record(
             workOrderId: any(named: 'workOrderId'),
             action: any(named: 'action'),
@@ -130,7 +134,8 @@ void main() {
   });
 
   group('resolveIncoming — local is dirty', () {
-    test('local wins when server version equals local server version', () async {
+    test('local wins when server version equals local server version',
+        () async {
       final local = _baseOrder(isDirty: true, serverVersion: 1);
       final remote = _baseOrder(isDirty: false, serverVersion: 1);
       when(() => workOrderRepo.findById('order-1'))
@@ -138,8 +143,8 @@ void main() {
 
       await resolver.resolveIncoming(_remotePayload(remote));
 
-      // Local wins — should NOT save the remote order
-      verifyNever(() => workOrderRepo.save(any()));
+      // Local wins — should NOT persist the remote order locally.
+      verifyNever(() => workOrderRepo.updateLocalOnly(any()));
     });
 
     test('server wins when remote version is higher; audit entry written',
@@ -151,7 +156,7 @@ void main() {
 
       await resolver.resolveIncoming(_remotePayload(remote));
 
-      verify(() => workOrderRepo.save(any())).called(1);
+      verify(() => workOrderRepo.updateLocalOnly(any())).called(1);
       verify(() => auditLogRepo.record(
             workOrderId: 'order-1',
             action: AuditAction.conflictResolved,

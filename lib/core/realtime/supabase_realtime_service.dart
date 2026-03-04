@@ -23,20 +23,17 @@ class SupabaseRealtimeService implements RealtimeService {
       {};
   final Map<String, StreamController<Map<String, dynamic>>> _notesControllers =
       {};
-  final Map<String, StreamController<List<PresenceUser>>>
-      _presenceControllers = {};
+  final Map<String, StreamController<List<PresenceUser>>> _presenceControllers =
+      {};
 
   RealtimeChannel _channelFor(String workOrderId) {
     if (_channels.containsKey(workOrderId)) {
       return _channels[workOrderId]!;
     }
 
-    final orderCtrl =
-        StreamController<Map<String, dynamic>>.broadcast();
-    final notesCtrl =
-        StreamController<Map<String, dynamic>>.broadcast();
-    final presenceCtrl =
-        StreamController<List<PresenceUser>>.broadcast();
+    final orderCtrl = StreamController<Map<String, dynamic>>.broadcast();
+    final notesCtrl = StreamController<Map<String, dynamic>>.broadcast();
+    final presenceCtrl = StreamController<List<PresenceUser>>.broadcast();
 
     _orderControllers[workOrderId] = orderCtrl;
     _notesControllers[workOrderId] = notesCtrl;
@@ -106,17 +103,14 @@ class SupabaseRealtimeService implements RealtimeService {
   Stream<void> watchWorkOrderList() {
     if (_listController == null || _listController!.isClosed) {
       _listController = StreamController<void>.broadcast();
-      _listChannel = _client
-          .channel('work_orders_list')
-          .onPostgresChanges(
+      _listChannel = _client.channel('work_orders_list').onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'work_orders',
             callback: (_) {
               if (!_listController!.isClosed) _listController!.add(null);
             },
-          )
-        ..subscribe();
+          )..subscribe();
     }
     return _listController!.stream;
   }
@@ -215,10 +209,12 @@ class SupabaseRealtimeService implements RealtimeService {
         'title': r['title'],
         'description': r['description'] ?? '',
         'status': r['status'],
+        'priority': r['priority'],
         'assignedTo': r['assigned_to'],
         'createdBy': r['created_by'],
         'createdAt': r['created_at'],
         'updatedAt': r['updated_at'],
+        'dueAt': r['due_at'],
         'completedAt': r['completed_at'],
         'locationLabel': r['location_label'],
         'remoteId': r['id'],

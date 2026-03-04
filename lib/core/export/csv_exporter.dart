@@ -6,9 +6,17 @@ import 'package:path_provider/path_provider.dart';
 
 class CsvExporter {
   static const _headers = [
-    'ID', 'Title', 'Description', 'Status',
-    'Assigned To', 'Created By', 'Location',
-    'Created At', 'Updated At',
+    'ID',
+    'Title',
+    'Description',
+    'Status',
+    'Priority',
+    'Assigned To',
+    'Created By',
+    'Location',
+    'Due At',
+    'Created At',
+    'Updated At',
   ];
 
   Future<File> export(List<WorkOrder> orders) async {
@@ -19,9 +27,11 @@ class CsvExporter {
         o.title,
         o.description,
         o.status.name,
+        o.priority.name,
         o.assignedTo,
         o.createdBy,
         o.locationLabel ?? '',
+        o.dueAt?.toIso8601String() ?? '',
         o.createdAt.toIso8601String(),
         o.updatedAt.toIso8601String(),
       ]);

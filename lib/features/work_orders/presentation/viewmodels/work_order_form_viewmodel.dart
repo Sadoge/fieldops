@@ -3,16 +3,21 @@ import 'package:fieldops/core/permissions/permission.dart';
 import 'package:fieldops/core/providers.dart';
 import 'package:fieldops/core/utils/id_generator.dart';
 import 'package:fieldops/features/work_orders/domain/entities/work_order.dart';
+import 'package:fieldops/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:fieldops/features/work_orders/domain/entities/work_order_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WorkOrderFormState extends Equatable {
+  static const _unset = Object();
+
   const WorkOrderFormState({
     this.existingId,
     this.title = '',
     this.description = '',
     this.locationLabel = '',
     this.assignedTo = '',
+    this.priority = WorkOrderPriority.medium,
+    this.dueAt,
     this.isSubmitting = false,
     this.errorMessage,
   });
@@ -22,6 +27,8 @@ class WorkOrderFormState extends Equatable {
   final String description;
   final String locationLabel;
   final String assignedTo;
+  final WorkOrderPriority priority;
+  final DateTime? dueAt;
   final bool isSubmitting;
   final String? errorMessage;
 
@@ -34,6 +41,8 @@ class WorkOrderFormState extends Equatable {
     String? description,
     String? locationLabel,
     String? assignedTo,
+    WorkOrderPriority? priority,
+    Object? dueAt = _unset,
     bool? isSubmitting,
     String? errorMessage,
     bool clearError = false,
@@ -44,14 +53,23 @@ class WorkOrderFormState extends Equatable {
         description: description ?? this.description,
         locationLabel: locationLabel ?? this.locationLabel,
         assignedTo: assignedTo ?? this.assignedTo,
+        priority: priority ?? this.priority,
+        dueAt: dueAt == _unset ? this.dueAt : dueAt as DateTime?,
         isSubmitting: isSubmitting ?? this.isSubmitting,
         errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       );
 
   @override
   List<Object?> get props => [
-        existingId, title, description, locationLabel,
-        assignedTo, isSubmitting, errorMessage,
+        existingId,
+        title,
+        description,
+        locationLabel,
+        assignedTo,
+        priority,
+        dueAt,
+        isSubmitting,
+        errorMessage,
       ];
 }
 
@@ -66,6 +84,8 @@ class WorkOrderFormViewModel extends AutoDisposeNotifier<WorkOrderFormState> {
       description: order.description,
       locationLabel: order.locationLabel ?? '',
       assignedTo: order.assignedTo,
+      priority: order.priority,
+      dueAt: order.dueAt,
     );
   }
 
@@ -73,6 +93,8 @@ class WorkOrderFormViewModel extends AutoDisposeNotifier<WorkOrderFormState> {
   void setDescription(String v) => state = state.copyWith(description: v);
   void setLocation(String v) => state = state.copyWith(locationLabel: v);
   void setAssignedTo(String v) => state = state.copyWith(assignedTo: v);
+  void setPriority(WorkOrderPriority v) => state = state.copyWith(priority: v);
+  void setDueAt(DateTime? v) => state = state.copyWith(dueAt: v);
 
   Future<bool> submit() async {
     if (!state.isValid) {
@@ -97,14 +119,17 @@ class WorkOrderFormViewModel extends AutoDisposeNotifier<WorkOrderFormState> {
           title: state.title.trim(),
           description: state.description.trim(),
           status: WorkOrderStatus.newOrder,
+          priority: state.priority,
           assignedTo: state.assignedTo.trim().isEmpty
               ? (user?.id ?? 'unassigned')
               : state.assignedTo.trim(),
           createdBy: user?.id ?? 'unknown',
           createdAt: now,
           updatedAt: now,
-          locationLabel:
-              state.locationLabel.trim().isEmpty ? null : state.locationLabel.trim(),
+          dueAt: state.dueAt,
+          locationLabel: state.locationLabel.trim().isEmpty
+              ? null
+              : state.locationLabel.trim(),
         );
       } else {
         final existing = await ref
@@ -114,8 +139,11 @@ class WorkOrderFormViewModel extends AutoDisposeNotifier<WorkOrderFormState> {
         order = existing.copyWith(
           title: state.title.trim(),
           description: state.description.trim(),
-          locationLabel:
-              state.locationLabel.trim().isEmpty ? null : state.locationLabel.trim(),
+          priority: state.priority,
+          dueAt: state.dueAt,
+          locationLabel: state.locationLabel.trim().isEmpty
+              ? null
+              : state.locationLabel.trim(),
           assignedTo: state.assignedTo.trim().isEmpty
               ? existing.assignedTo
               : state.assignedTo.trim(),
@@ -128,12 +156,12 @@ class WorkOrderFormViewModel extends AutoDisposeNotifier<WorkOrderFormState> {
       ref.read(syncEngineProvider).sync();
       return true;
     } catch (e) {
-      state = state.copyWith(
-          isSubmitting: false, errorMessage: e.toString());
+      state = state.copyWith(isSubmitting: false, errorMessage: e.toString());
       return false;
     }
   }
 }
 
-final workOrderFormViewModelProvider = AutoDisposeNotifierProvider<
-    WorkOrderFormViewModel, WorkOrderFormState>(WorkOrderFormViewModel.new);
+final workOrderFormViewModelProvider =
+    AutoDisposeNotifierProvider<WorkOrderFormViewModel, WorkOrderFormState>(
+        WorkOrderFormViewModel.new);

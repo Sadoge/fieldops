@@ -15,8 +15,7 @@ class PdfExporter {
         pageFormat: PdfPageFormat.a4,
         header: (_) => pw.Text(
           'Field Ops — Work Order Report',
-          style: pw.TextStyle(
-              fontSize: 16, fontWeight: pw.FontWeight.bold),
+          style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
         ),
         footer: (ctx) => pw.Align(
           alignment: pw.Alignment.centerRight,
@@ -29,15 +28,21 @@ class PdfExporter {
           pw.SizedBox(height: 12),
           pw.TableHelper.fromTextArray(
             headers: [
-              'Title', 'Status', 'Assigned To', 'Location', 'Updated',
+              'Title',
+              'Status',
+              'Priority',
+              'Due',
+              'Assigned To',
             ],
             data: orders
                 .map((o) => [
                       o.title,
                       o.status.name,
+                      o.priority.name,
+                      o.dueAt == null
+                          ? '-'
+                          : DateFormatter.formatDate(o.dueAt!),
                       o.assignedTo,
-                      o.locationLabel ?? '-',
-                      DateFormatter.formatDate(o.updatedAt),
                     ])
                 .toList(),
             headerStyle:
@@ -47,12 +52,11 @@ class PdfExporter {
               0: const pw.FlexColumnWidth(3),
               1: const pw.FlexColumnWidth(1.5),
               2: const pw.FlexColumnWidth(2),
-              3: const pw.FlexColumnWidth(2),
-              4: const pw.FlexColumnWidth(1.5),
+              3: const pw.FlexColumnWidth(1.7),
+              4: const pw.FlexColumnWidth(2),
             },
             border: pw.TableBorder.all(width: 0.5),
-            headerDecoration:
-                const pw.BoxDecoration(color: PdfColors.grey200),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
           ),
         ],
       ),

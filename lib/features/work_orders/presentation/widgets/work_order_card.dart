@@ -1,6 +1,7 @@
 import 'package:fieldops/core/theme/app_theme.dart';
 import 'package:fieldops/core/utils/date_formatter.dart';
 import 'package:fieldops/features/work_orders/domain/entities/work_order.dart';
+import 'package:fieldops/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:fieldops/features/work_orders/presentation/widgets/status_badge.dart';
 import 'package:flutter/material.dart';
 
@@ -72,6 +73,35 @@ class WorkOrderCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _MetaChip(
+                              icon: Icons.flag_outlined,
+                              label: _priorityLabel(order.priority),
+                              foreground: _priorityColor(order.priority),
+                              background:
+                                  _priorityColor(order.priority).withAlpha(20),
+                            ),
+                            if (order.dueAt != null)
+                              _MetaChip(
+                                icon: order.isOverdue
+                                    ? Icons.warning_amber_rounded
+                                    : Icons.schedule_outlined,
+                                label: _slaLabel(order),
+                                foreground: order.isOverdue
+                                    ? Theme.of(context).colorScheme.error
+                                    : AppColors.navy,
+                                background: order.isOverdue
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.error.withAlpha(20)
+                                    : AppColors.navy.withAlpha(18),
+                              ),
+                          ],
+                        ),
                         const SizedBox(height: 10),
                         Row(
                           children: [
@@ -148,5 +178,67 @@ class WorkOrderCard extends StatelessWidget {
     return assignedTo
         .substring(0, assignedTo.length >= 2 ? 2 : 1)
         .toUpperCase();
+  }
+
+  String _priorityLabel(WorkOrderPriority priority) => switch (priority) {
+        WorkOrderPriority.low => 'Low',
+        WorkOrderPriority.medium => 'Medium',
+        WorkOrderPriority.high => 'High',
+        WorkOrderPriority.urgent => 'Urgent',
+      };
+
+  Color _priorityColor(WorkOrderPriority priority) => switch (priority) {
+        WorkOrderPriority.low => Colors.blueGrey,
+        WorkOrderPriority.medium => AppColors.statusNew,
+        WorkOrderPriority.high => AppColors.orange,
+        WorkOrderPriority.urgent => const Color(0xFFB71C1C),
+      };
+
+  String _slaLabel(WorkOrder order) {
+    final dueAt = order.dueAt;
+    if (dueAt == null) return '';
+    if (order.isOverdue) return DateFormatter.relativeDeadline(dueAt);
+    if (order.isClosed) return 'Due ${DateFormatter.formatDate(dueAt)}';
+    return DateFormatter.relativeDeadline(dueAt);
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    required this.foreground,
+    required this.background,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color foreground;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: foreground),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: foreground,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
